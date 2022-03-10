@@ -1,0 +1,1 @@
+This folder is reserved for cloned repositories generated from `repositories.sh`. Do not modify cloned repositories manually.
