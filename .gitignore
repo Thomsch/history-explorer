@@ -1,3 +1,4 @@
 /repositories/**/
+/data/*.csv
 venv/
 .idea

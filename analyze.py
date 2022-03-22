@@ -49,10 +49,10 @@ if __name__ == '__main__':
             clean_paths = []
             for path in paths:
                 split_path = path.split('/')
-                split_path.pop(0)
+                root = split_path.pop(0)
 
-                if guava_filter(path):
-                    clean_paths.append(split_path)
+                if split_path and len (split_path) > 2 and (root != "guava-gwt" or root != "benchmark") and guava_filter(path):
+                    clean_paths.append("/".join(split_path[0:5]))
 
             data[parent] = clean_paths
             order.append(parent)
@@ -76,6 +76,23 @@ if __name__ == '__main__':
     # Write results to CSV
     for commit in order:
         print(f'Commit {commit}')
-        paths = data[commit]
+        paths = set(data[commit])
         for path in paths:
             print(f"- {path}")
+
+    import csv
+
+    header = ["commit", "path"]
+
+    # open the file in the write mode
+    with open('data/guava.csv', 'w', encoding='UTF8') as f:
+        # create the csv writer
+        writer = csv.writer(f)
+
+        # write a row to the csv file
+        writer.writerow(header)
+
+        for commit in order:
+            paths = set(data[commit])
+            for path in paths:
+                writer.writerow([commit, path])

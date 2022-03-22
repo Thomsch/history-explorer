@@ -1,0 +1,1 @@
+This folder is reserved for CSV files created from running `analyze.py`.
