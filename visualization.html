@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+    <style>
+        text {
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+
+<div id="my_dataviz"></div>
+<div id="commits"></div>
+
+<script type="module">
+    import * as d3 from "https://cdn.skypack.dev/d3@7";
+
+    const data = await d3.csv("data/guava.csv");
+
+    const uniqueCommits = new Set()
+    const orderedCommits = new Array()
+    for(let d of data){
+        console.log(d)
+        if(!uniqueCommits.has(d.commit)){
+            uniqueCommits.add(d.commit)
+            orderedCommits.push(d.commit)
+        }
+    }
+    console.log(orderedCommits)
+
+    const uniquePaths = new Set()
+    const orderedPaths = new Array()
+    for(let d of data){
+        console.log(d)
+        if(!uniquePaths.has(d.path)){
+            uniquePaths.add(d.path)
+            orderedPaths.push(d.path)
+        }
+    }
+    console.log(orderedPaths)
+
+    console.log(data)
+    const row = d3.select("#commits")
+        .data(data, function (d) { return d })
+        .enter()
+        .append("div")
+
+    row.append("p").text(function (d) {return d.commit})
+    row.append("p").text(function (d) {return d.path})
+
+    // set the dimensions and margins of the graph
+    var margin = {top: 10, right: 30, bottom: 150, left: 50},
+    width = 1000 - margin.left - margin.right,
+    height = 800 - margin.top - margin.bottom;
+
+    // append the svg object to the body of the page
+    var svg = d3.select("#my_dataviz")
+    .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var scale_y = d3.scalePoint(orderedCommits, [ 0, height]).padding(1)
+    svg.append("g")
+        .call(d3.axisRight(scale_y)
+            .tickSize(width)
+            // .tickFormat(formatTick))
+            .tickFormat(d => d.toUpperCase().substring(0,6))
+        )
+        .call(g => g.select(".domain")
+            .remove())
+        .call(g => g.selectAll("line")
+            .attr("stroke-opacity", 0.5)
+            .attr("stroke-dasharray", "2,2")
+            .attr("transform", "translate(30,0)")
+        )
+        .call(g => g.selectAll(".tick text")
+            .attr("x", -20)
+            // .attr("dy", -4)
+        )
+
+    function formatTick(d) {
+      const s = (d / 1e6).toFixed(1);
+      return this.parentNode.nextSibling ? `\xa0${s}` : `$${s} million`;
+    }
+
+    var scale_x = d3.scalePoint(orderedPaths, [ 0, width]).padding(1)
+    svg.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(scale_x))
+        .selectAll("text")
+        .attr("y", 10)
+        .attr("x", 10)
+        .attr("dy", ".35em")
+        .attr("transform", "rotate(45)")
+        .style("text-anchor", "start")
+        .call(g => g.select(".domain")
+        .remove())
+
+        // Add dots
+        svg.append('g')
+            // .attr("transform", "translate(20,6)")
+        .selectAll("dot")
+        .data(data)
+        .enter()
+        .append("circle")
+        .attr("cx", 50 )
+        .attr("cx", function (d) { return scale_x(d.path); } )
+        .attr("cy", function (d) { return scale_y(d.commit); } )
+        .attr("r", 5)
+        .style("fill", "#69b3a2")
+</script>
+
+</body>
+</html>
