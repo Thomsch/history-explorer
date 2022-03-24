@@ -23,33 +23,49 @@
     const uniqueCommits = new Set()
     const orderedCommits = new Array()
     for(let d of data){
-        console.log(d)
+        // console.log(d)
         if(!uniqueCommits.has(d.commit)){
             uniqueCommits.add(d.commit)
             orderedCommits.push(d.commit)
         }
     }
-    console.log(orderedCommits)
 
     const uniquePaths = new Set()
-    const orderedPaths = new Array()
+    const orderedPaths = []
     for(let d of data){
-        console.log(d)
+        // console.log(d)
         if(!uniquePaths.has(d.path)){
             uniquePaths.add(d.path)
             orderedPaths.push(d.path)
         }
     }
-    console.log(orderedPaths)
 
-    console.log(data)
-    const row = d3.select("#commits")
-        .data(data, function (d) { return d })
-        .enter()
-        .append("div")
+    const commitPaths = new Map()
+    for(let d of data) {
+        var paths = commitPaths.get(d.commit)
+        if(paths){
+            paths.push(d.path)
+        } else {
+            paths = []
+            paths.push(d.path)
+        }
+        commitPaths.set(d.commit, paths)
+    }
 
-    row.append("p").text(function (d) {return d.commit})
-    row.append("p").text(function (d) {return d.path})
+    const relatedPathsInCommit = []
+    for (let [commit, paths] of commitPaths) {
+        for (var i = 0; i < paths.length - 1; i++) {
+            for (var j = i; j < paths.length - 1; j++) {
+                relatedPathsInCommit.push(
+                    {
+                        commit:commit,
+                        pathA:paths[i],
+                        pathB:paths[j+1]
+                    }
+                )
+            }
+        }
+    }
 
     // set the dimensions and margins of the graph
     var margin = {top: 10, right: 30, bottom: 150, left: 50},
@@ -65,6 +81,8 @@
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     var scale_y = d3.scalePoint(orderedCommits, [ 0, height]).padding(1)
+    var scale_x = d3.scalePoint(orderedPaths, [ 0, width]).padding(1)
+
     svg.append("g")
         .call(d3.axisRight(scale_y)
             .tickSize(width)
@@ -74,21 +92,15 @@
         .call(g => g.select(".domain")
             .remove())
         .call(g => g.selectAll("line")
-            .attr("stroke-opacity", 0.5)
+            .attr("stroke-opacity", 0.2)
             .attr("stroke-dasharray", "2,2")
-            .attr("transform", "translate(30,0)")
+            .attr("transform", "translate(" + scale_x.step() + ",0)")
         )
         .call(g => g.selectAll(".tick text")
             .attr("x", -20)
             // .attr("dy", -4)
         )
 
-    function formatTick(d) {
-      const s = (d / 1e6).toFixed(1);
-      return this.parentNode.nextSibling ? `\xa0${s}` : `$${s} million`;
-    }
-
-    var scale_x = d3.scalePoint(orderedPaths, [ 0, width]).padding(1)
     svg.append("g")
         .attr("transform", "translate(0," + height + ")")
         .call(d3.axisBottom(scale_x))
@@ -101,18 +113,32 @@
         .call(g => g.select(".domain")
         .remove())
 
-        // Add dots
-        svg.append('g')
+    // Add dots
+    svg.append('g')
             // .attr("transform", "translate(20,6)")
         .selectAll("dot")
         .data(data)
         .enter()
         .append("circle")
         .attr("cx", 50 )
-        .attr("cx", function (d) { return scale_x(d.path); } )
-        .attr("cy", function (d) { return scale_y(d.commit); } )
+        .attr("cx", d => scale_x(d.path))
+        .attr("cy", d => scale_y(d.commit))
         .attr("r", 5)
         .style("fill", "#69b3a2")
+
+    svg.append('g')
+        .selectAll('changes')
+        .data(relatedPathsInCommit)
+        .enter()
+        .append("line")
+        .style("stroke", "#69b3a2")
+        .style("stroke-width", 2)
+        .attr("x1", d => scale_x(d.pathA))
+        .attr("x2", d => scale_x(d.pathB))
+        .attr("y1", d => scale_y(d.commit))
+        .attr("y2", d => scale_y(d.commit))
+
+
 </script>
 
 </body>
